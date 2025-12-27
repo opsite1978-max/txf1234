@@ -3,86 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>台指籌碼獵殺 - 專業增強版</title>
+    <title>台指籌碼獵殺 - 圖表戰情版</title>
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         :root { --primary: #2563eb; --bg: #f8fafc; --card: #ffffff; --text: #334155; --red: #ef4444; --green: #22c55e; --input-bg: #f1f5f9; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg); margin: 0; padding: 15px; color: var(--text); padding-bottom: 200px; }
-        .container { max-width: 480px; margin: 0 auto; background: var(--card); padding: 24px; border-radius: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
-        header { text-align: center; margin-bottom: 24px; }
-        h1 { font-size: 22px; margin: 0; color: #0f172a; font-weight: 800; letter-spacing: -0.5px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg); margin: 0; padding: 15px; color: var(--text); padding-bottom: 220px; }
+        .container { max-width: 600px; margin: 0 auto; background: var(--card); padding: 20px; border-radius: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        
+        header { text-align: center; margin-bottom: 20px; }
+        h1 { font-size: 22px; margin: 0; color: #0f172a; font-weight: 800; }
         .subtitle { font-size: 13px; color: #64748b; margin-top: 6px; }
+
         .btn-group { display: flex; gap: 10px; margin-bottom: 20px; }
         .action-btn { flex: 1; padding: 12px; font-size: 14px; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
         .btn-auto { background: #3b82f6; color: white; }
         .btn-auto:active { background: #2563eb; transform: scale(0.98); }
         .btn-clear { background: #e2e8f0; color: #475569; max-width: 100px; }
+        
         .loading-spin { animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* 圖表區塊 */
+        #chart-container {
+            width: 100%;
+            height: 350px;
+            margin-bottom: 25px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+        .chart-legend {
+            position: absolute; left: 10px; top: 10px; z-index: 20; 
+            font-size: 11px; font-family: monospace; pointer-events: none;
+            background: rgba(255,255,255,0.8); padding: 4px; border-radius: 4px;
+        }
+        .legend-item { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
         .section-title { font-size: 13px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin: 20px 0 10px 0; display: flex; align-items: center; gap: 8px; }
         .section-title::after { content: ""; flex: 1; height: 1px; background: #e2e8f0; }
+
         .input-row { display: flex; gap: 12px; margin-bottom: 12px; }
         .input-group { flex: 1; position: relative; }
         label { display: block; font-size: 12px; color: #64748b; margin-bottom: 6px; font-weight: 500; }
-        input { width: 100%; padding: 14px; border: 2px solid transparent; border-radius: 14px; font-size: 18px; font-weight: 600; box-sizing: border-box; background: var(--input-bg); color: #334155; outline: none; transition: 0.2s; -webkit-appearance: none; }
-        input:focus { background: #fff; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
-        input::placeholder { color: #cbd5e1; font-weight: 400; font-size: 16px; }
         
-        /* 針對台指期欄位的特別樣式 */
-        .tx-input input { border: 2px solid #bfdbfe; background: #eff6ff; color: #1e3a8a; font-weight: 800; }
-        .tx-input input:focus { border-color: #2563eb; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2); }
+        input { width: 100%; padding: 12px; border: 2px solid transparent; border-radius: 12px; font-size: 16px; font-weight: 600; box-sizing: border-box; background: var(--input-bg); color: #334155; outline: none; transition: 0.2s; -webkit-appearance: none; }
+        input:focus { background: #fff; border-color: var(--primary); }
 
+        .tx-input input { border: 2px solid #bfdbfe; background: #eff6ff; color: #1e3a8a; }
         .long-input input { color: var(--red); background: #fef2f2; }
-        .long-input input:focus { border-color: var(--red); box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1); }
+        .long-input input:focus { border-color: var(--red); }
         .short-input input { color: var(--green); background: #f0fdf4; }
-        .short-input input:focus { border-color: var(--green); box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.1); }
-        
+        .short-input input:focus { border-color: var(--green); }
+
+        /* 結果卡片 */
         #result-card { 
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); 
-            width: 90%; max-width: 440px; 
-            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
-            border-radius: 20px; 
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.15); 
-            border: 1px solid rgba(255,255,255,0.5);
+            position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); 
+            width: 95%; max-width: 580px; 
+            background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px);
+            border-radius: 16px; 
+            box-shadow: 0 -5px 30px rgba(0,0,0,0.15); 
+            border: 1px solid #e2e8f0;
             z-index: 100;
             overflow: hidden;
             transition: 0.3s;
         }
-        .result-header { padding: 12px; text-align: center; color: white; font-weight: bold; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
+        .result-header { padding: 10px 15px; text-align: center; color: white; font-weight: bold; font-size: 15px; display: flex; justify-content: space-between; align-items: center; }
         .bg-red { background: linear-gradient(135deg, #ef4444, #b91c1c); } 
         .bg-green { background: linear-gradient(135deg, #22c55e, #15803d); } 
         .bg-gray { background: #64748b; }
-        .result-content { padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; }
+        .result-content { padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; }
         .main-stat { text-align: left; }
-        .stat-label { font-size: 12px; color: #64748b; margin-bottom: 2px; }
-        .stat-value { font-size: 24px; font-weight: 800; font-family: monospace; letter-spacing: -1px; }
+        .stat-value { font-size: 20px; font-weight: 800; font-family: monospace; }
         .target-box { text-align: right; }
-        .target-price { font-size: 20px; font-weight: 800; }
+        .target-price { font-size: 18px; font-weight: 800; }
         .target-desc { font-size: 12px; opacity: 0.8; }
-        #status-msg { text-align: center; font-size: 12px; color: var(--primary); margin-bottom: 10px; min-height: 18px; font-weight: 500; }
-        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        #status-msg { text-align: center; font-size: 12px; margin-bottom: 10px; min-height: 18px; font-weight: 500; color: var(--primary); }
     </style>
 </head>
 <body>
+
 <div class="container">
     <header>
-        <h1>📉 台指籌碼獵殺 <span style="font-size:12px; vertical-align: middle; background:#eff6ff; color:#2563eb; padding:3px 8px; border-radius:20px;">Pro</span></h1>
-        <div class="subtitle">散戶多空籌碼自動追蹤系統</div>
+        <h1>📉 台指籌碼獵殺 <span style="font-size:12px; background:#eff6ff; color:#2563eb; padding:3px 8px; border-radius:20px;">Chart版</span></h1>
+        <div class="subtitle">自動抓取大盤K線 + 均線/布林帶</div>
     </header>
+
     <div class="btn-group">
         <button class="action-btn btn-auto" onclick="autoDetect()" id="autoBtn">
-            <span id="btn-icon">🔄</span> 更新大盤數據
+            <span id="btn-icon">🔄</span> 更新 K 線與數據
         </button>
-        <button class="action-btn btn-clear" onclick="clearAll()">
-            🗑️ 清除
-        </button>
+        <button class="action-btn btn-clear" onclick="clearAll()">🗑️ 清除</button>
     </div>
     <div id="status-msg"></div>
 
-    <div class="section-title">📊 價格與波動</div>
+    <div id="chart-container">
+        <div class="chart-legend" id="chart-legend">
+            <div>載入後顯示指標...</div>
+        </div>
+    </div>
+
+    <div class="section-title">📊 價格參數</div>
     <div class="input-row">
         <div class="input-group">
-            <label>加權指數 (參考)</label>
-            <input type="number" id="spot_price" placeholder="自動抓取" disabled style="background:#f1f5f9; color:#94a3b8;">
+            <label>加權指數</label>
+            <input type="number" id="spot_price" placeholder="自動" disabled style="background:#f1f5f9;">
         </div>
         <div class="input-group">
             <label>波動率 (ATR)</label>
@@ -92,30 +118,29 @@
     
     <div class="input-row">
         <div class="input-group tx-input">
-            <label>📍 台指期指數 (計算基準)</label>
-            <input type="number" id="tx_price" placeholder="輸入目前期貨點數" oninput="saveAndCalc()">
+            <label>📍 台指期 (目標計算基準)</label>
+            <input type="number" id="tx_price" placeholder="輸入期貨點數" oninput="saveAndCalc()">
         </div>
     </div>
 
-    <div class="section-title">📉 小台指 (MTX) 散戶</div>
+    <div class="section-title">📉 散戶籌碼 (小台/微台)</div>
     <div class="input-row">
         <div class="input-group long-input">
-            <label>多單 (Long)</label>
+            <label>MTX 多單</label>
             <input type="number" id="mtx_long" placeholder="0" oninput="saveAndCalc()">
         </div>
         <div class="input-group short-input">
-            <label>空單 (Short)</label>
+            <label>MTX 空單</label>
             <input type="number" id="mtx_short" placeholder="0" oninput="saveAndCalc()">
         </div>
     </div>
-    <div class="section-title">📉 微台指 (TMF) 散戶</div>
     <div class="input-row">
         <div class="input-group long-input">
-            <label>多單 (Long)</label>
+            <label>TMF 多單</label>
             <input type="number" id="tmf_long" placeholder="0" oninput="saveAndCalc()">
         </div>
         <div class="input-group short-input">
-            <label>空單 (Short)</label>
+            <label>TMF 空單</label>
             <input type="number" id="tmf_short" placeholder="0" oninput="saveAndCalc()">
         </div>
     </div>
@@ -124,132 +149,232 @@
 <div id="result-card">
     <div id="res-header" class="result-header">
         <span id="header-title">等待數據...</span>
-        <span style="font-size:11px; background:rgba(255,255,255,0.2); padding:2px 6px; border-radius:4px;">即時運算</span>
+        <span style="font-size:11px; background:rgba(255,255,255,0.2); padding:2px 6px; border-radius:4px;">即時</span>
     </div>
     <div class="result-content">
         <div class="main-stat">
-            <div class="stat-label">散戶總權重淨單</div>
+            <div style="font-size:11px; color:#64748b">散戶淨單</div>
             <div class="stat-value" id="res-total">0</div>
-            <div class="stat-label" style="margin-top:4px;">預估資金: <span id="res-money">0</span> 億</div>
         </div>
         <div class="target-box">
-            <div class="stat-label" id="target-label">主力目標 (期)</div>
+            <div style="font-size:11px; color:#475569" id="target-label">目標價</div>
             <div class="target-price" id="res-price">--</div>
-            <div class="target-desc" id="res-action">觀望中</div>
+            <div class="target-desc" id="res-action">觀望</div>
         </div>
     </div>
 </div>
 
 <script>
-    // 欄位列表，新增 tx_price
+    // --- 全局變數 ---
+    let chart, candleSeries, ma60Series, ma200Series, bbUpperSeries, bbLowerSeries;
+    let targetPriceLine = null; // 用來存儲目標價線
     const fields = ['spot_price', 'volatility', 'tx_price', 'mtx_long', 'mtx_short', 'tmf_long', 'tmf_short'];
 
+    // --- 初始化圖表 ---
+    function initChart() {
+        const container = document.getElementById('chart-container');
+        chart = LightweightCharts.createChart(container, {
+            width: container.clientWidth,
+            height: 350,
+            layout: { background: { color: '#ffffff' }, textColor: '#333' },
+            grid: { vertLines: { color: '#f0f3fa' }, horzLines: { color: '#f0f3fa' } },
+            rightPriceScale: { borderColor: '#dfe1e5' },
+            timeScale: { borderColor: '#dfe1e5', rightOffset: 5 },
+            crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+        });
+
+        candleSeries = chart.addCandlestickSeries({ upColor: '#ef4444', downColor: '#22c55e', borderUpColor: '#ef4444', borderDownColor: '#22c55e', wickUpColor: '#ef4444', wickDownColor: '#22c55e' });
+        
+        // 設定線條樣式
+        ma60Series = chart.addLineSeries({ color: '#2563eb', lineWidth: 2, title: 'MA60' }); // 藍色季線
+        ma200Series = chart.addLineSeries({ color: '#d97706', lineWidth: 2, title: 'MA200' }); // 橘色年線
+        bbUpperSeries = chart.addLineSeries({ color: '#9333ea', lineWidth: 1, lineStyle: 2, title: 'BB Upper' }); // 紫色布林上
+        bbLowerSeries = chart.addLineSeries({ color: '#9333ea', lineWidth: 1, lineStyle: 2, title: 'BB Lower' }); // 紫色布林下
+
+        // RWD 自適應
+        window.addEventListener('resize', () => {
+            chart.applyOptions({ width: container.clientWidth });
+        });
+    }
+
     window.onload = function() {
+        initChart();
         fields.forEach(id => {
             const savedVal = localStorage.getItem(id);
             if (savedVal) document.getElementById(id).value = savedVal;
         });
+        // 嘗試從 localStorage 恢復圖表數據是比較困難的，這裡我們只恢復輸入框，
+        // 使用者需要按「更新」來畫圖。
         calculate();
     }
-    
+
+    // --- 技術指標計算函數 ---
+    function calculateSMA(data, period) {
+        let result = [];
+        for (let i = 0; i < data.length; i++) {
+            if (i < period - 1) { result.push({ time: data[i].time, value: NaN }); continue; }
+            let sum = 0;
+            for (let j = 0; j < period; j++) sum += data[i - j].close;
+            result.push({ time: data[i].time, value: sum / period });
+        }
+        return result.filter(d => !isNaN(d.value));
+    }
+
+    function calculateBollinger(data, period, stdDevMultiplier) {
+        let upper = [], lower = [];
+        for (let i = 0; i < data.length; i++) {
+            if (i < period - 1) { 
+                upper.push({ time: data[i].time, value: NaN });
+                lower.push({ time: data[i].time, value: NaN });
+                continue; 
+            }
+            // 計算 SMA
+            let sum = 0;
+            for (let j = 0; j < period; j++) sum += data[i - j].close;
+            let sma = sum / period;
+
+            // 計算標準差
+            let sumSqDiff = 0;
+            for (let j = 0; j < period; j++) {
+                sumSqDiff += Math.pow(data[i - j].close - sma, 2);
+            }
+            let stdDev = Math.sqrt(sumSqDiff / period);
+
+            upper.push({ time: data[i].time, value: sma + stdDev * stdDevMultiplier });
+            lower.push({ time: data[i].time, value: sma - stdDev * stdDevMultiplier });
+        }
+        return { upper: upper.filter(d => !isNaN(d.value)), lower: lower.filter(d => !isNaN(d.value)) };
+    }
+
+    // --- 資料抓取與處理 ---
+    async function autoDetect() {
+        const btn = document.getElementById('autoBtn');
+        const icon = document.getElementById('btn-icon');
+        const status = document.getElementById('status-msg');
+        
+        btn.disabled = true;
+        icon.classList.add('loading-spin');
+        status.innerText = "正在下載近一年 K 線資料...";
+        status.style.color = "var(--primary)";
+
+        try {
+            // 抓取 1 年份的資料 (range=1y) 以計算 MA200
+            const symbol = "%5ETWII"; 
+            const timestamp = new Date().getTime();
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/' + symbol + '?interval=1d&range=1y&events=history&_=' + timestamp)}`;
+            
+            const response = await fetch(proxyUrl);
+            if (!response.ok) throw new Error("API Error");
+            const data = await response.json();
+            const yahooData = JSON.parse(data.contents);
+            if (!yahooData.chart || !yahooData.chart.result) throw new Error("No Data");
+            
+            const result = yahooData.chart.result[0];
+            const quotes = result.indicators.quote[0];
+            const timestamps = result.timestamp;
+
+            // 整理成 Lightweight Charts 格式
+            let ohlcData = [];
+            let validHighs = [], validLows = []; // 用來算 ATR
+
+            for (let i = 0; i < timestamps.length; i++) {
+                if (quotes.open[i] && quotes.high[i] && quotes.low[i] && quotes.close[i]) {
+                    // 轉換時間戳為 YYYY-MM-DD
+                    let date = new Date(timestamps[i] * 1000);
+                    let timeStr = date.toISOString().split('T')[0];
+                    
+                    ohlcData.push({
+                        time: timeStr,
+                        open: quotes.open[i],
+                        high: quotes.high[i],
+                        low: quotes.low[i],
+                        close: quotes.close[i]
+                    });
+                    validHighs.push(quotes.high[i]);
+                    validLows.push(quotes.low[i]);
+                }
+            }
+
+            // 更新圖表數據
+            candleSeries.setData(ohlcData);
+
+            // 計算指標
+            const ma60Data = calculateSMA(ohlcData, 60);
+            const ma200Data = calculateSMA(ohlcData, 200);
+            const bbData = calculateBollinger(ohlcData, 20, 2); // 布林帶通常用 20MA, 2倍標準差
+
+            ma60Series.setData(ma60Data);
+            ma200Series.setData(ma200Data);
+            bbUpperSeries.setData(bbData.upper);
+            bbLowerSeries.setData(bbData.lower);
+
+            // 更新圖例文字
+            const lastC = ohlcData[ohlcData.length-1];
+            document.getElementById('chart-legend').innerHTML = `
+                <div class="legend-item"><b>加權指數</b>: ${Math.round(lastC.close)}</div>
+                <div class="legend-item"><span class="dot" style="background:#2563eb"></span>MA60: ${Math.round(ma60Data[ma60Data.length-1].value)}</div>
+                <div class="legend-item"><span class="dot" style="background:#d97706"></span>MA200: ${Math.round(ma200Data[ma200Data.length-1].value)}</div>
+                <div class="legend-item"><span class="dot" style="background:#9333ea"></span>BB: ${Math.round(bbData.upper[bbData.upper.length-1].value)} / ${Math.round(bbData.lower[bbData.lower.length-1].value)}</div>
+            `;
+
+            // 計算 ATR (取最後 5 天)
+            let totalRange = 0, count = 0;
+            for (let i = validHighs.length - 5; i < validHighs.length; i++) {
+                if (i >= 0) {
+                    totalRange += (validHighs[i] - validLows[i]);
+                    count++;
+                }
+            }
+            const avgVol = count > 0 ? Math.round(totalRange / count) : 300;
+            const lastClosePrice = Math.round(ohlcData[ohlcData.length-1].close);
+
+            // 填入 UI
+            document.getElementById('spot_price').value = lastClosePrice;
+            document.getElementById('volatility').value = avgVol;
+            
+            // 如果台指期是空的，預設填入大盤
+            if(!document.getElementById('tx_price').value) {
+                document.getElementById('tx_price').value = lastClosePrice;
+            }
+
+            saveAndCalc(); // 觸發計算與畫線
+            
+            status.innerText = `✅ K線圖與指標更新完成！`;
+            status.style.color = "#16a34a";
+            
+        } catch (error) {
+            console.error(error);
+            status.innerText = "⚠️ 資料抓取失敗，請稍後重試";
+            status.style.color = "#ef4444";
+        } finally {
+            btn.disabled = false;
+            icon.classList.remove('loading-spin');
+        }
+    }
+
     function saveAndCalc() {
         fields.forEach(id => {
             const el = document.getElementById(id);
-            // spot_price 是 disabled 的，也要存一下方便下次看
             if(el) localStorage.setItem(id, el.value);
         });
         calculate();
     }
-    
+
     function clearAll() {
-        if(confirm('確定要清除所有輸入的數據嗎？')) {
+        if(confirm('清除所有數據？')) {
             fields.forEach(id => {
                 const el = document.getElementById(id);
                 if(el) el.value = '';
                 localStorage.removeItem(id);
             });
             calculate();
-            document.getElementById('status-msg').innerText = "已清除數據";
         }
     }
-    
-    async function autoDetect() {
-        const btn = document.getElementById('autoBtn');
-        const icon = document.getElementById('btn-icon');
-        const status = document.getElementById('status-msg');
-        
-        const spotInput = document.getElementById('spot_price');
-        const txInput = document.getElementById('tx_price');
-        const volInput = document.getElementById('volatility');
-        
-        btn.disabled = true;
-        icon.classList.add('loading-spin');
-        btn.style.opacity = "0.7";
-        status.innerText = "正在連線 Yahoo Finance...";
-        status.style.color = "var(--primary)";
-        
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000);
-        
-        try {
-            const symbol = "%5ETWII"; 
-            const timestamp = new Date().getTime();
-            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/' + symbol + '?interval=1d&range=10d&_=' + timestamp)}`;
-            
-            const response = await fetch(proxyUrl, { signal: controller.signal });
-            clearTimeout(timeoutId);
-            
-            if (!response.ok) throw new Error("網路回應錯誤");
-            const data = await response.json();
-            const yahooData = JSON.parse(data.contents);
-            if (!yahooData.chart || !yahooData.chart.result) throw new Error("無數據內容");
-            
-            const result = yahooData.chart.result[0];
-            const quotes = result.indicators.quote[0];
-            const lastClose = result.meta.regularMarketPrice;
-            
-            let totalRange = 0;
-            let count = 0;
-            const len = quotes.high.length;
-            const daysToCalc = 5;
-            for (let i = len - daysToCalc; i < len; i++) {
-                if (quotes.high[i] && quotes.low[i]) {
-                    totalRange += (quotes.high[i] - quotes.low[i]);
-                    count++;
-                }
-            }
-            const avgVol = count > 0 ? Math.round(totalRange / count) : 300;
-            
-            // 填入數值
-            spotInput.value = Math.round(lastClose); // 填入加權指數(參考用)
-            volInput.value = avgVol;                 // 填入波動
-            
-            // 如果台指期欄位是空的，或使用者想重新抓，我們自動把台指期預設為大盤指數
-            // 讓使用者自己去微調價差，這樣比較方便
-            txInput.value = Math.round(lastClose); 
-            
-            saveAndCalc();
-            status.innerText = `✅ 更新成功！大盤 ${Math.round(lastClose)} | 波動 ${avgVol}`;
-            status.style.color = "#16a34a";
-            
-        } catch (error) {
-            console.error(error);
-            status.innerText = "⚠️ 連線逾時，請手動輸入。";
-            status.style.color = "#ef4444";
-        } finally {
-            btn.disabled = false;
-            icon.classList.remove('loading-spin');
-            btn.style.opacity = "1";
-        }
-    }
-    
+
     function calculate() {
-        // 取得價格：優先使用台指期(tx)，如果沒填就用加權(spot)
         let spot = parseInt(document.getElementById('spot_price').value) || 0;
         let tx = parseInt(document.getElementById('tx_price').value);
         let vol = parseInt(document.getElementById('volatility').value) || 300;
-        
-        // 如果台指期沒填，就暫時用加權指數來算
         let calcPrice = tx ? tx : spot;
         
         let mtx_L = parseInt(document.getElementById('mtx_long').value) || 0;
@@ -269,7 +394,7 @@
         else if (total_net < 0) totalEl.style.color = '#22c55e'; 
         else totalEl.style.color = '#334155';
         
-        document.getElementById('res-money').innerText = capital.toFixed(2);
+        document.getElementById('res-money').innerText = capital.toFixed(2) + " 億";
         
         let cardHeader = document.getElementById('res-header');
         let headerTitle = document.getElementById('header-title');
@@ -277,29 +402,64 @@
         let resAction = document.getElementById('res-action');
         const THRESHOLD = 1500;
         
+        // --- 畫線邏輯 ---
+        // 先移除舊的線
+        if (targetPriceLine) {
+            candleSeries.removePriceLine(targetPriceLine);
+            targetPriceLine = null;
+        }
+
+        let target = 0;
+        let lineColor = '';
+        let lineTitle = '';
+
         if (total_net > THRESHOLD) {
+            // 散戶做多 -> 主力殺盤
             cardHeader.className = "result-header bg-green"; 
             headerTitle.innerText = "📉 散戶做多 ➜ 主力殺盤";
-            let target = calcPrice - vol;
+            target = calcPrice - vol;
             resPrice.innerText = target;
             resPrice.style.color = "#16a34a"; 
-            resAction.innerText = `殺 ${vol} 點 (${target}) 逼停損`;
+            resAction.innerText = `殺 ${vol} 點逼停損`;
             resAction.style.color = "#dcfce7";
+            
+            lineColor = '#22c55e'; // 綠線
+            lineTitle = '主力目標 (殺)';
+
         } else if (total_net < -THRESHOLD) {
+            // 散戶做空 -> 主力軋空
             cardHeader.className = "result-header bg-red"; 
             headerTitle.innerText = "📈 散戶做空 ➜ 主力軋空";
-            let target = calcPrice + vol;
+            target = calcPrice + vol;
             resPrice.innerText = target;
             resPrice.style.color = "#fee2e2"; 
-            resAction.innerText = `拉 ${vol} 點 (${target}) 逼停損`;
+            resAction.innerText = `拉 ${vol} 點逼停損`;
             resAction.style.color = "#fee2e2";
+
+            lineColor = '#ef4444'; // 紅線
+            lineTitle = '主力目標 (軋)';
+
         } else {
             cardHeader.className = "result-header bg-gray";
-            headerTitle.innerText = "⚖️ 籌碼平衡 ➜ 區間震盪";
+            headerTitle.innerText = "⚖️ 區間震盪";
             resPrice.innerText = "觀望";
             resPrice.style.color = "white";
-            resAction.innerText = "無明顯獵殺目標";
+            resAction.innerText = "無獵殺目標";
             resAction.style.color = "#e2e8f0";
+        }
+
+        // 如果有目標價，且圖表已初始化，則在圖表上畫線
+        if (target !== 0 && candleSeries) {
+            targetPriceLine = candleSeries.createPriceLine({
+                price: target,
+                color: lineColor,
+                lineWidth: 2,
+                lineStyle: 1, // 0:Solid, 1:Dotted, 2:Dashed
+                axisLabelVisible: true,
+                title: lineTitle,
+            });
+            // 自動縮放讓目標價可見
+            chart.timeScale().fitContent();
         }
     }
 </script>
